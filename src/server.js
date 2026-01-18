@@ -24,20 +24,36 @@ app.use(passport.initialize());
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
     
-    // Allow frontend URL
-    if (origin === FRONTEND_URL) {
+    // Normalize URLs (remove trailing slashes)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    const normalizedFrontend = FRONTEND_URL.replace(/\/$/, '');
+    
+    // Allow frontend URL (exact match)
+    if (normalizedOrigin === normalizedFrontend) {
+      console.log('✅ CORS: Allowing frontend origin:', normalizedOrigin);
+      return callback(null, true);
+    }
+    
+    // Allow Vercel preview deployments (same domain pattern)
+    if (normalizedOrigin.includes('vercel.app') && normalizedFrontend.includes('vercel.app')) {
+      console.log('✅ CORS: Allowing Vercel deployment:', normalizedOrigin);
       return callback(null, true);
     }
     
     // In development, allow localhost
-    if (FRONTEND_URL.includes('localhost') && origin.includes('localhost')) {
+    if (normalizedFrontend.includes('localhost') && normalizedOrigin.includes('localhost')) {
+      console.log('✅ CORS: Allowing localhost:', normalizedOrigin);
       return callback(null, true);
     }
     
     // Log blocked origins for debugging
-    console.log('⚠️  CORS blocked origin:', origin);
+    console.log('⚠️  CORS blocked origin:', normalizedOrigin);
+    console.log('   Expected frontend URL:', normalizedFrontend);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,

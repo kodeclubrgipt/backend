@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "type-check": "echo 'TypeScript removed - using JavaScript'"
+    "type-check": "echo 'TypeScript removed - using JavaScript'",
+    "clear-db": "node scripts/clear-database.js"
   },
   "keywords": [],
   "author": "",
