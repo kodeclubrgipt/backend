@@ -13,8 +13,8 @@ const router = express.Router();
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   // Ensure BACKEND_URL doesn't have trailing slash
   const baseUrl = env.BACKEND_URL.replace(/\/$/, '');
-  const callbackURL = `$https://backend-95ve.onrender.com/api/auth/google/callback`;
-  
+  const callbackURL = `${baseUrl}/api/auth/google/callback`;
+
   console.log('🔧 Configuring Google OAuth Strategy');
   console.log('   Client ID:', env.GOOGLE_CLIENT_ID.substring(0, 20) + '...');
   console.log('   Backend URL:', env.BACKEND_URL);
@@ -240,7 +240,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
 
         // Ensure FRONTEND_URL doesn't have trailing slash
         const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
-        
+
         // Redirect to frontend callback page with token
         const redirectUrl = `${frontendUrl}/auth/callback?token=${token}`;
         console.log('🔄 Redirecting to frontend:', redirectUrl);
@@ -273,7 +273,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
 router.get('/me', authenticate, async (req, res) => {
   try {
     const user = req.user;
-    
+
     // Check if user is admin
     const ADMIN_EMAILS = [
       'jiwanji6756@gmail.com',
