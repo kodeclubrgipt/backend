@@ -20,10 +20,32 @@ const FRONTEND_URL = env.FRONTEND_URL;
 app.use(passport.initialize());
 
 // Middleware
-app.use(cors({
-  origin: FRONTEND_URL,
+// CORS configuration - allow frontend origin
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow frontend URL
+    if (origin === FRONTEND_URL) {
+      return callback(null, true);
+    }
+    
+    // In development, allow localhost
+    if (FRONTEND_URL.includes('localhost') && origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    // Log blocked origins for debugging
+    console.log('⚠️  CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
