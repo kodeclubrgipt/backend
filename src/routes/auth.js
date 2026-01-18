@@ -13,7 +13,7 @@ const router = express.Router();
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   // Ensure BACKEND_URL doesn't have trailing slash
   const baseUrl = env.BACKEND_URL.replace(/\/$/, '');
-  const callbackURL = `${baseUrl}/api/auth/google/callback`;
+  const callbackURL = `$https://backend-95ve.onrender.com/api/auth/google/callback`;
   
   console.log('🔧 Configuring Google OAuth Strategy');
   console.log('   Client ID:', env.GOOGLE_CLIENT_ID.substring(0, 20) + '...');
