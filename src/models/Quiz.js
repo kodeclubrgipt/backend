@@ -1,22 +1,7 @@
-import mongoose, { Document, Schema } from 'mongoose';
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-export interface IQuestion {
-  question: string;
-  options: string[];
-  correctAnswer: number; // Index of correct answer (0-based)
-}
-
-export interface IQuiz extends Document {
-  heading: string;
-  description?: string;
-  questions: IQuestion[];
-  createdBy: mongoose.Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-  isActive: boolean;
-}
-
-const QuestionSchema = new Schema<IQuestion>({
+const QuestionSchema = new Schema({
   question: {
     type: String,
     required: true,
@@ -25,7 +10,7 @@ const QuestionSchema = new Schema<IQuestion>({
     type: [String],
     required: true,
     validate: {
-      validator: function(v: string[]) {
+      validator: function(v) {
         return v.length >= 2 && v.length <= 6; // At least 2 options, max 6
       },
       message: 'Each question must have between 2 and 6 options',
@@ -35,7 +20,7 @@ const QuestionSchema = new Schema<IQuestion>({
     type: Number,
     required: true,
     validate: {
-      validator: function(this: IQuestion, v: number) {
+      validator: function(v) {
         return v >= 0 && v < this.options.length;
       },
       message: 'Correct answer index must be within options range',
@@ -43,7 +28,7 @@ const QuestionSchema = new Schema<IQuestion>({
   },
 });
 
-const QuizSchema = new Schema<IQuiz>(
+const QuizSchema = new Schema(
   {
     heading: {
       type: String,
@@ -58,7 +43,7 @@ const QuizSchema = new Schema<IQuiz>(
       type: [QuestionSchema],
       required: true,
       validate: {
-        validator: function(v: IQuestion[]) {
+        validator: function(v) {
           return v.length > 0;
         },
         message: 'Quiz must have at least one question',
@@ -79,4 +64,4 @@ const QuizSchema = new Schema<IQuiz>(
   }
 );
 
-export default mongoose.model<IQuiz>('Quiz', QuizSchema);
+module.exports = mongoose.model('Quiz', QuizSchema);

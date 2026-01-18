@@ -1,10 +1,10 @@
-import express, { Request, Response } from 'express';
-import Quiz from '../models/Quiz';
+const express = require('express');
+const Quiz = require('../models/Quiz');
 
 const router = express.Router();
 
 // Get all active quizzes (public)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req, res) => {
   try {
     const quizzes = await Quiz.find({ isActive: true })
       .select('heading description questions createdAt')
@@ -29,7 +29,7 @@ router.get('/', async (req: Request, res: Response) => {
       quizzes: publicQuizzes,
       count: publicQuizzes.length,
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to fetch quizzes',
@@ -38,7 +38,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get single quiz (public, without answers)
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req, res) => {
   try {
     const quiz = await Quiz.findOne({ 
       _id: req.params.id, 
@@ -69,7 +69,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       success: true,
       quiz: publicQuiz,
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to fetch quiz',
@@ -78,7 +78,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Submit quiz answers and get results
-router.post('/:id/submit', async (req: Request, res: Response) => {
+router.post('/:id/submit', async (req, res) => {
   try {
     const { answers } = req.body; // Array of selected answer indices
 
@@ -126,7 +126,7 @@ router.post('/:id/submit', async (req: Request, res: Response) => {
         details: results,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to submit quiz',
@@ -134,4 +134,4 @@ router.post('/:id/submit', async (req: Request, res: Response) => {
   }
 });
 
-export default router;
+module.exports = router;

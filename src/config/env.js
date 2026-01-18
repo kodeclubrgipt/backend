@@ -1,8 +1,4 @@
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load environment variables from .env file
-dotenv.config();
+require('dotenv').config();
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -21,8 +17,8 @@ const optionalEnvVars = {
 };
 
 // Check for required environment variables
-export const validateEnv = (): void => {
-  const missing: string[] = [];
+const validateEnv = () => {
+  const missing = [];
 
   requiredEnvVars.forEach((varName) => {
     if (!process.env[varName]) {
@@ -57,10 +53,14 @@ export const validateEnv = (): void => {
 };
 
 // Export environment variables with defaults
-export const env = {
+const env = {
   ...optionalEnvVars,
-  MONGODB_URI: process.env.MONGODB_URI!,
-  JWT_SECRET: process.env.JWT_SECRET!,
+  MONGODB_URI: process.env.MONGODB_URI,
+  JWT_SECRET: process.env.JWT_SECRET,
 };
 
-export default env;
+module.exports = {
+  validateEnv,
+  env,
+  default: env,
+};

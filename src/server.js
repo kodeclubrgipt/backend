@@ -1,13 +1,13 @@
-import express from 'express';
-import cors from 'cors';
-import passport from 'passport';
-import authRoutes from './routes/auth';
-import userRoutes from './routes/user';
-import adminRoutes from './routes/admin';
-import quizRoutes from './routes/quiz';
-import { errorHandler } from './middleware/errorHandler';
-import { connectDB, getConnectionStatus } from './config/database';
-import { validateEnv, env } from './config/env';
+const express = require('express');
+const cors = require('cors');
+const passport = require('passport');
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+const adminRoutes = require('./routes/admin');
+const quizRoutes = require('./routes/quiz');
+const { errorHandler } = require('./middleware/errorHandler');
+const { connectDB, getConnectionStatus } = require('./config/database');
+const { validateEnv, env } = require('./config/env');
 
 // Validate environment variables before starting
 validateEnv();
@@ -71,4 +71,4 @@ const startServer = async () => {
 // Start the application
 startServer();
 
-export default app;
+module.exports = app;

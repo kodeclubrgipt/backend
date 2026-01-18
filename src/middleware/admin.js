@@ -1,0 +1,41 @@
+// Admin email addresses
+const ADMIN_EMAILS = [
+  'jiwanji6756@gmail.com',
+  'kodeclubrgipt@gmail.com',
+];
+
+const isAdmin = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ 
+        success: false,
+        message: 'Authentication required' 
+      });
+      return;
+    }
+
+    // Check if user email is in admin list
+    const userEmail = req.user.email.toLowerCase();
+    const isAdminUser = ADMIN_EMAILS.some(
+      adminEmail => adminEmail.toLowerCase() === userEmail
+    );
+
+    // Also check isAdmin flag in database (for flexibility)
+    if (!isAdminUser && !req.user.isAdmin) {
+      res.status(403).json({ 
+        success: false,
+        message: 'Access denied. Admin privileges required.' 
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error checking admin status' 
+    });
+  }
+};
+
+module.exports = { isAdmin };

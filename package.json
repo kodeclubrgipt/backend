@@ -2,13 +2,11 @@
   "name": "kode-club-backend",
   "version": "1.0.0",
   "description": "Backend API for Kode Club",
-  "main": "dist/server.js",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "postinstall": "npm run build",
-    "type-check": "tsc --noEmit"
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "type-check": "echo 'TypeScript removed - using JavaScript'"
   },
   "keywords": [],
   "author": "",
@@ -22,17 +20,6 @@
     "dotenv": "^16.3.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "express-validator": "^7.0.1",
-    "typescript": "^5.3.3",
-    "@types/node": "^20.10.5",
-    "@types/express": "^4.17.21",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/cors": "^2.8.17",
-    "@types/passport": "^1.0.16",
-    "@types/passport-google-oauth20": "^2.0.14"
-  },
-  "devDependencies": {
-    "tsx": "^4.7.0"
+    "express-validator": "^7.0.1"
   }
 }

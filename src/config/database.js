@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { env } from './env';
+const mongoose = require('mongoose');
+const { env } = require('./env');
 
 const MONGODB_URI = env.MONGODB_URI;
 
@@ -30,7 +30,7 @@ process.on('SIGINT', async () => {
 });
 
 // Connect to MongoDB
-export const connectDB = async (): Promise<void> => {
+const connectDB = async () => {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log(`📦 Connected to MongoDB database: ${mongoose.connection.name}`);
@@ -41,7 +41,7 @@ export const connectDB = async (): Promise<void> => {
 };
 
 // Get connection status
-export const getConnectionStatus = () => {
+const getConnectionStatus = () => {
   return {
     readyState: mongoose.connection.readyState,
     host: mongoose.connection.host,
@@ -50,4 +50,8 @@ export const getConnectionStatus = () => {
   };
 };
 
-export default mongoose;
+module.exports = {
+  connectDB,
+  getConnectionStatus,
+  default: mongoose,
+};

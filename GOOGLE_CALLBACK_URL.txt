@@ -1,0 +1,13 @@
+https://backend-95ve.onrender.com/api/auth/google/callback
+
+Copy this exact URL and add it to Google Cloud Console:
+1. Go to Google Cloud Console → APIs & Services → Credentials
+2. Click on your OAuth 2.0 Client ID
+3. Under "Authorized redirect URIs", click "+ ADD URI"
+4. Paste: https://backend-95ve.onrender.com/api/auth/google/callback
+5. Click SAVE
+
+Important:
+- Must be exact match (no trailing slash)
+- Use https:// (not http://)
+- Include /api/auth/google/callback
