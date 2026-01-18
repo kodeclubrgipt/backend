@@ -50,12 +50,13 @@ router.get('/users/:id', async (req: Request, res: Response) => {
 });
 
 // Delete user
-router.delete('/users/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/users/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const userId = req.params.id;
     
     // Prevent admin from deleting themselves
-    if (userId === req.user!._id.toString()) {
+    if (userId === authReq.user!._id.toString()) {
       return res.status(400).json({
         success: false,
         message: 'You cannot delete your own account',
@@ -121,7 +122,8 @@ router.put('/users/:id', async (req: Request, res: Response) => {
 });
 
 // Upload quiz from JSON
-router.post('/quizzes', async (req: AuthRequest, res: Response) => {
+router.post('/quizzes', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     let { heading, description, questions, quiz } = req.body;
 
@@ -199,7 +201,7 @@ router.post('/quizzes', async (req: AuthRequest, res: Response) => {
       heading,
       description,
       questions: processedQuestions,
-      createdBy: req.user!._id,
+      createdBy: authReq.user!._id,
       isActive: true,
     });
 

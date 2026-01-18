@@ -55,7 +55,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
 
           return done(null, user);
         } catch (error: any) {
-          return done(error, null);
+          return done(error, undefined);
         }
       }
     )
@@ -68,9 +68,10 @@ const generateToken = (userId: string): string => {
   if (!secret || secret === 'fallback-secret') {
     throw new Error('JWT_SECRET is not configured. Please set it in your .env file');
   }
+  const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as string;
   return jwt.sign({ userId }, secret, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  });
+    expiresIn: expiresIn,
+  } as jwt.SignOptions);
 };
 
 // Register with email
@@ -250,9 +251,10 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
 }
 
 // Get current user
-router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/me', authenticate, async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    const user = req.user!;
+    const user = authReq.user!;
     
     // Check if user is admin
     const ADMIN_EMAILS = [

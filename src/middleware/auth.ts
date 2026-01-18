@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 import { env } from '../config/env';
@@ -7,11 +7,12 @@ export interface AuthRequest extends Request {
   user?: IUser;
 }
 
-export const authenticate = async (
-  req: AuthRequest,
+export const authenticate: RequestHandler = async (
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  const authReq = req as AuthRequest;
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
@@ -33,7 +34,7 @@ export const authenticate = async (
       return;
     }
 
-    req.user = user;
+    authReq.user = user;
     next();
   } catch (error) {
     res.status(401).json({ message: 'Token is not valid' });

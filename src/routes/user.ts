@@ -1,13 +1,14 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import User from '../models/User';
 
 const router = express.Router();
 
 // Get user profile
-router.get('/profile', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/profile', authenticate, async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    const user = req.user!;
+    const user = authReq.user!;
     res.json({
       success: true,
       user: {
@@ -31,9 +32,10 @@ router.get('/profile', authenticate, async (req: AuthRequest, res: Response) => 
 });
 
 // Update user profile
-router.put('/profile', authenticate, async (req: AuthRequest, res: Response) => {
+router.put('/profile', authenticate, async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    const user = req.user!;
+    const user = authReq.user!;
     const { name, avatar } = req.body;
 
     if (name) user.name = name;
