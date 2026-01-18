@@ -226,18 +226,29 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
       console.log('🟢 Google OAuth callback received');
       next();
     },
-    passport.authenticate('google', { session: false }),
+    passport.authenticate('google', { session: false, failureRedirect: `${env.FRONTEND_URL}/login?error=oauth_failed` }),
     async (req, res) => {
       try {
+        if (!req.user) {
+          console.error('❌ No user object after Google OAuth');
+          return res.redirect(`${env.FRONTEND_URL}/login?error=no_user`);
+        }
+
         const user = req.user;
         console.log('✅ Google OAuth successful for user:', user.email);
         const token = generateToken(user._id.toString());
 
-        // Redirect to frontend with token
-        res.redirect(`${env.FRONTEND_URL}/auth/callback?token=${token}`);
+        // Ensure FRONTEND_URL doesn't have trailing slash
+        const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
+        
+        // Redirect to frontend callback page with token
+        const redirectUrl = `${frontendUrl}/auth/callback?token=${token}`;
+        console.log('🔄 Redirecting to frontend:', redirectUrl);
+        res.redirect(redirectUrl);
       } catch (error) {
         console.error('❌ Google OAuth error:', error);
-        res.redirect(`${env.FRONTEND_URL}/login?error=authentication_failed`);
+        const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
+        res.redirect(`${frontendUrl}/login?error=authentication_failed`);
       }
     }
   );
