@@ -1,0 +1,8 @@
+CORRECT MONGODB URI FOR YOUR .env FILE:
+
+MONGODB_URI=mongodb+srv://webxplore_admin:KodeClub@cluster0.9afk7ho.mongodb.net/webxplore?retryWrites=true&w=majority
+
+Copy this EXACTLY into your .env file. Make sure:
+- It's all on ONE line
+- No spaces or line breaks
+- Ends with &w=majority (not majoritynpm)

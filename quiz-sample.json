@@ -1,0 +1,56 @@
+{
+  "heading": "JavaScript Fundamentals Quiz",
+  "description": "Test your knowledge of JavaScript basics",
+  "questions": [
+    {
+      "question": "What is the correct way to declare a variable in JavaScript?",
+      "options": [
+        "var x = 5;",
+        "variable x = 5;",
+        "v x = 5;",
+        "declare x = 5;"
+      ],
+      "correctAnswer": 0
+    },
+    {
+      "question": "Which method is used to add an element to the end of an array?",
+      "options": [
+        "push()",
+        "pop()",
+        "shift()",
+        "unshift()"
+      ],
+      "correctAnswer": 0
+    },
+    {
+      "question": "What does '===' operator do in JavaScript?",
+      "options": [
+        "Compares values only",
+        "Compares values and types",
+        "Assigns a value",
+        "Checks if value exists"
+      ],
+      "correctAnswer": 1
+    },
+    {
+      "question": "What is the output of: typeof null?",
+      "options": [
+        "null",
+        "undefined",
+        "object",
+        "boolean"
+      ],
+      "correctAnswer": 2
+    },
+    {
+      "question": "Which keyword is used to declare a constant in JavaScript?",
+      "options": [
+        "var",
+        "let",
+        "const",
+        "constant"
+      ],
+      "correctAnswer": 2
+    }
+  ]
+}

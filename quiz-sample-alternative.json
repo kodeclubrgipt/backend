@@ -1,0 +1,25 @@
+{
+  "heading": "Sample Quiz",
+  "quiz": [
+    {
+      "question": "What does HTML stand for?",
+      "options": [
+        "Hyper Text Markup Language",
+        "High Text Machine Language",
+        "Hyperlinks and Text Markup Language",
+        "Home Tool Markup Language"
+      ],
+      "correct_answer": "Hyper Text Markup Language"
+    },
+    {
+      "question": "Which HTML tag is used to create a hyperlink?",
+      "options": [
+        "<link>",
+        "<a>",
+        "<href>",
+        "<hyper>"
+      ],
+      "correct_answer": "<a>"
+    }
+  ]
+}
