@@ -53,7 +53,7 @@ router.get('/users/:id', async (req, res) => {
 router.delete('/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
-    
+
     // Prevent admin from deleting themselves
     if (userId === req.user._id.toString()) {
       return res.status(400).json({
@@ -69,6 +69,8 @@ router.delete('/users/:id', async (req, res) => {
         message: 'User not found',
       });
     }
+
+    console.log(`🗑️  User Deleted: Admin "${req.user.name}" deleted user "${user.name}" (${user.email})`);
 
     res.json({
       success: true,
@@ -86,7 +88,7 @@ router.delete('/users/:id', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
   try {
     const { name, isAdmin, totalSolved, currentStreak, globalRank } = req.body;
-    
+
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
@@ -142,14 +144,14 @@ router.post('/quizzes', async (req, res) => {
     const processedQuestions = [];
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      
+
       if (!q.question || !q.options || !Array.isArray(q.options)) {
         return res.status(400).json({
           success: false,
           message: `Question ${i + 1} is invalid. Must have question and options array.`,
         });
       }
-      
+
       if (q.options.length < 2 || q.options.length > 6) {
         return res.status(400).json({
           success: false,
@@ -159,7 +161,7 @@ router.post('/quizzes', async (req, res) => {
 
       // Handle both formats: correctAnswer (number) or correct_answer (string)
       let correctAnswerIndex;
-      
+
       if (typeof q.correctAnswer === 'number') {
         // Format: correctAnswer is already an index
         if (q.correctAnswer < 0 || q.correctAnswer >= q.options.length) {
@@ -203,6 +205,8 @@ router.post('/quizzes', async (req, res) => {
       isActive: true,
     });
 
+    console.log(`🛠️  Quiz Created: Admin "${req.user.name}" created quiz "${heading}" with ${processedQuestions.length} questions.`);
+
     res.status(201).json({
       success: true,
       message: 'Quiz created successfully',
@@ -216,13 +220,70 @@ router.post('/quizzes', async (req, res) => {
   }
 });
 
+// Bulk create users
+router.post('/users/bulk', async (req, res) => {
+  try {
+    const { users } = req.body;
+
+    if (!Array.isArray(users) || users.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid input. An array of users is required.',
+      });
+    }
+
+    const validUsers = [];
+    const errors = [];
+
+    for (const userData of users) {
+      try {
+        // Basic validation, more robust validation might be needed
+        if (!userData.name || !userData.email || !userData.password) {
+          errors.push({ user: userData, message: 'Missing required fields (name, email, password)' });
+          continue;
+        }
+        // Hash password before adding to validUsers
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        validUsers.push({ ...userData, password: hashedPassword });
+      } catch (validationError) {
+        errors.push({ user: userData, message: validationError.message });
+      }
+    }
+
+    if (validUsers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid users provided for creation.',
+        errors: errors,
+      });
+    }
+
+    // Insert users
+    const result = await User.insertMany(validUsers, { ordered: false });
+
+    console.log(`👥 Bulk User Create: Admin "${req.user.name}" added ${result.length} new users.`);
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully created ${result.length} users`,
+      addedCount: result.length,
+      errors: errors,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create users in bulk',
+    });
+  }
+});
+
 // Get all quizzes
 router.get('/quizzes', async (req, res) => {
   try {
     const quizzes = await Quiz.find()
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 });
-    
+
     res.json({
       success: true,
       quizzes,
@@ -251,6 +312,7 @@ router.delete('/quizzes/:id', async (req, res) => {
       success: true,
       message: 'Quiz deleted successfully',
     });
+    console.log(`🗑️  Quiz Deleted: Admin "${req.user.name}" deleted quiz "${quiz.heading}" (ID: ${quiz._id})`);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -278,6 +340,7 @@ router.patch('/quizzes/:id/toggle', async (req, res) => {
       message: `Quiz ${quiz.isActive ? 'activated' : 'deactivated'} successfully`,
       quiz,
     });
+    console.log(`🔄 Quiz Status: Admin "${req.user.name}" ${quiz.isActive ? 'activated' : 'deactivated'} quiz "${quiz.heading}"`);
   } catch (error) {
     res.status(500).json({
       success: false,

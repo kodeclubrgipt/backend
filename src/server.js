@@ -19,41 +19,35 @@ const FRONTEND_URL = env.FRONTEND_URL;
 // Initialize Passport
 app.use(passport.initialize());
 
+const requestLogger = require('./middleware/requestLogger');
+app.use(requestLogger);
+
 // Middleware
 // CORS configuration - allow frontend origin
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('✅ CORS: Allowing request with no origin');
-      return callback(null, true);
-    }
-    
-    // Normalize URLs (remove trailing slashes)
+    // Allow requests with no origin
+    if (!origin) return callback(null, true);
+
+    // Normalize URLs
     const normalizedOrigin = origin.replace(/\/$/, '');
     const normalizedFrontend = FRONTEND_URL.replace(/\/$/, '');
-    
-    // Allow frontend URL (exact match)
-    if (normalizedOrigin === normalizedFrontend) {
-      console.log('✅ CORS: Allowing frontend origin:', normalizedOrigin);
-      return callback(null, true);
-    }
-    
-    // Allow Vercel preview deployments (same domain pattern)
+
+    // Allow frontend URL
+    if (normalizedOrigin === normalizedFrontend) return callback(null, true);
+
+    // Allow Vercel preview deployments
     if (normalizedOrigin.includes('vercel.app') && normalizedFrontend.includes('vercel.app')) {
-      console.log('✅ CORS: Allowing Vercel deployment:', normalizedOrigin);
       return callback(null, true);
     }
-    
+
     // In development, allow localhost
     if (normalizedFrontend.includes('localhost') && normalizedOrigin.includes('localhost')) {
-      console.log('✅ CORS: Allowing localhost:', normalizedOrigin);
       return callback(null, true);
     }
-    
-    // Log blocked origins for debugging
-    console.log('⚠️  CORS blocked origin:', normalizedOrigin);
-    console.log('   Expected frontend URL:', normalizedFrontend);
+
+    // Log blocked origins only if it's a genuine blockage (optional, kept for debugging issues)
+    // console.log('⚠️ CORS blocked:', normalizedOrigin); 
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -70,12 +64,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/stats', require('./routes/stats'));
+app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 // Health check with database status
 app.get('/api/health', (req, res) => {
   const dbStatus = getConnectionStatus();
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'Kode Club API is running',
     database: {
       connected: dbStatus.readyState === 1,
@@ -93,7 +89,7 @@ const startServer = async () => {
   try {
     // Connect to MongoDB
     await connectDB();
-    
+
     // Start Express server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

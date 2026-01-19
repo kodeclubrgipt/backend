@@ -13,7 +13,7 @@ const UserSchema = new Schema(
     },
     password: {
       type: String,
-      required: function() {
+      required: function () {
         return this.provider === 'email';
       },
       minlength: 6,
@@ -22,6 +22,19 @@ const UserSchema = new Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+      minlength: 3,
+      maxlength: 20,
+    },
+    profileComplete: {
+      type: Boolean,
+      default: false,
     },
     avatar: {
       type: String,
@@ -68,11 +81,11 @@ const UserSchema = new Schema(
 );
 
 // Hash password before saving
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) {
     return next();
   }
-  
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -83,11 +96,16 @@ UserSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-UserSchema.methods.comparePassword = async function(candidatePassword) {
+UserSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) {
     return false;
   }
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Get display name (username or name)
+UserSchema.methods.getDisplayName = function () {
+  return this.username || this.name;
 };
 
 module.exports = mongoose.model('User', UserSchema);

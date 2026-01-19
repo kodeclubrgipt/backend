@@ -11,16 +11,11 @@ const router = express.Router();
 
 // Configure Google OAuth Strategy (only if credentials are provided)
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
-  // Ensure BACKEND_URL doesn't have trailing slash
   const baseUrl = env.BACKEND_URL.replace(/\/$/, '');
   const callbackURL = `${baseUrl}/api/auth/google/callback`;
 
   console.log('🔧 Configuring Google OAuth Strategy');
-  console.log('   Client ID:', env.GOOGLE_CLIENT_ID.substring(0, 20) + '...');
-  console.log('   Backend URL:', env.BACKEND_URL);
   console.log('   Callback URL:', callbackURL);
-  console.log('   ⚠️  Make sure this exact URL is added to Google Cloud Console:');
-  console.log('      Authorized redirect URIs:', callbackURL);
 
   passport.use(
     new GoogleStrategy(
@@ -48,7 +43,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
             return done(null, user);
           }
 
-          // Create new user
+          // Create new user (profile not complete yet)
           user = await User.create({
             email: profile.emails?.[0]?.value,
             name: profile.displayName,
@@ -56,6 +51,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
             googleId: profile.id,
             provider: 'google',
             isEmailVerified: true,
+            profileComplete: false, // New users need to set username
           });
 
           return done(null, user);
@@ -71,21 +67,71 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
 const generateToken = (userId) => {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret === 'fallback-secret') {
-    throw new Error('JWT_SECRET is not configured. Please set it in your .env file');
+    throw new Error('JWT_SECRET is not configured');
   }
   const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
-  return jwt.sign({ userId }, secret, {
-    expiresIn: expiresIn,
-  });
+  return jwt.sign({ userId }, secret, { expiresIn });
 };
 
-// Register with email
+// Google OAuth routes
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+  router.get(
+    '/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
+
+  router.get(
+    '/google/callback',
+    passport.authenticate('google', { session: false, failureRedirect: `${env.FRONTEND_URL}/login?error=oauth_failed` }),
+    async (req, res) => {
+      try {
+        if (!req.user) {
+          return res.redirect(`${env.FRONTEND_URL}/login?error=no_user`);
+        }
+
+        const user = req.user;
+        const token = generateToken(user._id.toString());
+        const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
+
+        console.log(`🔑 Login Success: User "${req.user.name}" (${req.user.email}) logged in via Google.`);
+
+        // Check if profile is complete
+        if (!user.profileComplete || !user.username) {
+          // Redirect to profile setup page
+          res.redirect(`${frontendUrl}/auth/callback?token=${token}&setup=true`);
+        } else {
+          // Profile is complete, redirect normally
+          res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+        }
+      } catch (error) {
+        console.error('❌ Google OAuth error:', error);
+        res.redirect(`${env.FRONTEND_URL}/login?error=authentication_failed`);
+      }
+    }
+  );
+} else {
+  router.get('/google', (req, res) => {
+    res.status(503).json({
+      success: false,
+      message: 'Google OAuth is not configured.',
+    });
+  });
+}
+
+// Setup profile (set username after Google signup)
 router.post(
-  '/register',
+  '/setup-profile',
+  authenticate,
   [
-    body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 6 }),
-    body('name').trim().notEmpty(),
+    body('username')
+      .trim()
+      .isLength({ min: 3, max: 20 })
+      .matches(/^[a-zA-Z0-9_]+$/)
+      .withMessage('Username must be 3-20 characters, alphanumeric and underscores only'),
+    body('name')
+      .trim()
+      .isLength({ min: 2, max: 50 })
+      .withMessage('Name must be 2-50 characters'),
   ],
   async (req, res) => {
     try {
@@ -98,98 +144,45 @@ router.post(
         });
       }
 
-      const { email, password, name } = req.body;
+      const { username, name } = req.body;
+      const userId = req.user._id;
 
-      // Check if user already exists
-      const existingUser = await User.findOne({ email });
+      // Check if username is already taken
+      const existingUser = await User.findOne({
+        username: username.toLowerCase(),
+        _id: { $ne: userId }
+      });
+
       if (existingUser) {
         return res.status(400).json({
           success: false,
-          message: 'User already exists with this email',
+          message: 'Username is already taken',
         });
       }
 
-      // Create new user
-      const user = await User.create({
-        email,
-        password,
-        name,
-        provider: 'email',
-      });
-
-      const token = generateToken(user._id.toString());
-
-      res.status(201).json({
-        success: true,
-        message: 'User registered successfully',
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          provider: user.provider,
-          memberSince: user.memberSince,
+      // Update user profile
+      const user = await User.findByIdAndUpdate(
+        userId,
+        {
+          username: username.toLowerCase(),
+          name: name,
+          profileComplete: true,
         },
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Registration failed',
-      });
-    }
-  }
-);
-
-// Login with email
-router.post(
-  '/login',
-  [
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
-
-      const { email, password } = req.body;
-
-      // Find user
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password',
-        });
-      }
-
-      // Check password
-      if (!user.password || !(await user.comparePassword(password))) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password',
-        });
-      }
-
-      const token = generateToken(user._id.toString());
+        { new: true }
+      );
 
       res.json({
         success: true,
-        message: 'Login successful',
-        token,
+        message: 'Profile setup complete',
         user: {
           id: user._id,
           email: user.email,
           name: user.name,
+          username: user.username,
           avatar: user.avatar,
           provider: user.provider,
+          isAdmin: user.isAdmin,
+          profileComplete: user.profileComplete,
           memberSince: user.memberSince,
           totalSolved: user.totalSolved,
           currentStreak: user.currentStreak,
@@ -199,75 +192,31 @@ router.post(
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: error.message || 'Login failed',
+        message: error.message || 'Profile setup failed',
       });
     }
   }
 );
 
-// Google OAuth routes (only if Google OAuth is configured)
-if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
-  router.get(
-    '/google',
-    (req, res, next) => {
-      const baseUrl = env.BACKEND_URL.replace(/\/$/, '');
-      const callbackURL = `${baseUrl}/api/auth/google/callback`;
-      console.log('🔵 Google OAuth initiated');
-      console.log('   Expected callback URL:', callbackURL);
-      console.log('   ⚠️  If you see redirect_uri_mismatch, add this URL to Google Cloud Console');
-      next();
-    },
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-  );
+// Check username availability
+router.get('/check-username/:username', async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase();
 
-  router.get(
-    '/google/callback',
-    (req, res, next) => {
-      console.log('🟢 Google OAuth callback received');
-      next();
-    },
-    passport.authenticate('google', { session: false, failureRedirect: `${env.FRONTEND_URL}/login?error=oauth_failed` }),
-    async (req, res) => {
-      try {
-        if (!req.user) {
-          console.error('❌ No user object after Google OAuth');
-          return res.redirect(`${env.FRONTEND_URL}/login?error=no_user`);
-        }
-
-        const user = req.user;
-        console.log('✅ Google OAuth successful for user:', user.email);
-        const token = generateToken(user._id.toString());
-
-        // Ensure FRONTEND_URL doesn't have trailing slash
-        const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
-
-        // Redirect to frontend callback page with token
-        const redirectUrl = `${frontendUrl}/auth/callback?token=${token}`;
-        console.log('🔄 Redirecting to frontend:', redirectUrl);
-        res.redirect(redirectUrl);
-      } catch (error) {
-        console.error('❌ Google OAuth error:', error);
-        const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
-        res.redirect(`${frontendUrl}/login?error=authentication_failed`);
-      }
+    // Validate format
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+      return res.json({ available: false, message: 'Invalid username format' });
     }
-  );
-} else {
-  // Return error if Google OAuth is not configured
-  router.get('/google', (req, res) => {
-    res.status(503).json({
-      success: false,
-      message: 'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file.',
-    });
-  });
 
-  router.get('/google/callback', (req, res) => {
-    res.status(503).json({
-      success: false,
-      message: 'Google OAuth is not configured.',
+    const existingUser = await User.findOne({ username });
+    res.json({
+      available: !existingUser,
+      message: existingUser ? 'Username is taken' : 'Username is available'
     });
-  });
-}
+  } catch (error) {
+    res.status(500).json({ available: false, message: 'Error checking username' });
+  }
+});
 
 // Get current user
 router.get('/me', authenticate, async (req, res) => {
@@ -289,9 +238,11 @@ router.get('/me', authenticate, async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
+        username: user.username,
         avatar: user.avatar,
         provider: user.provider,
         isAdmin: isAdminUser,
+        profileComplete: user.profileComplete,
         memberSince: user.memberSince,
         totalSolved: user.totalSolved,
         currentStreak: user.currentStreak,
